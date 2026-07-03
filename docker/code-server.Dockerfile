@@ -18,11 +18,13 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PERSONAL_ACCESS_TOKEN=""
 
-# Install runtime deps and install this package globally so `mcp-server-azuredevops` is available
+# Install runtime deps
 COPY package*.json ./
 RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund && npm cache clean --force
 COPY --from=build /app/dist ./dist
-RUN npm install -g .
+
+# Manual symlink to completely bypass the broken npm lifecycle hooks
+RUN ln -s /app/dist/index.js /usr/local/bin/mcp-server-azuredevops && chmod +x /app/dist/index.js
 
 # Install code-server (official install script)
 RUN curl -fsSL https://code-server.dev/install.sh | sh
