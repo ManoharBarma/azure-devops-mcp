@@ -4,17 +4,13 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
-# Install all dependencies first so Docker layer caching remains effective.
-# Ignore lifecycle scripts during install so the package's prepare/build hooks do not run before sources are copied.
 COPY package*.json ./
 RUN npm ci --ignore-scripts --no-audit --no-fund
 
-# Copy the TypeScript configuration and application sources for compilation.
 COPY tsconfig.json ./
 COPY src ./src
 COPY docs ./docs
 
-# Generate the production build output expected by the package entrypoint.
 RUN npm run build
 
 # Runtime stage: keep only the compiled app and production dependencies.
@@ -22,19 +18,22 @@ FROM node:20-alpine AS runtime
 WORKDIR /app
 
 ENV NODE_ENV=production
-# Runtime secrets should be injected via environment variables at container start time.
 ENV PERSONAL_ACCESS_TOKEN=""
+ENV PORT=3000
 
-# Install only production dependencies to reduce attack surface and image size.
 COPY package*.json ./
 RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund && npm cache clean --force
 
-# Copy the compiled application into the runtime image.
 COPY --from=build --chown=node:node /app/dist ./dist
 
-# Run as a non-root user to avoid privilege escalation in the container.
+# Create a symlink to globally register the bin command if needed natively
+RUN ln -s /app/dist/index.js /usr/local/bin/mcp-server-azuredevops && chmod +x /app/dist/index.js
+
 RUN chown -R node:node /app
 USER node
 
-# The MCP server uses stdio for JSON-RPC, so start the compiled Node process directly.
-ENTRYPOINT ["node", "/app/dist/index.js"]
+# Expose the network listener wrapper port
+EXPOSE 3000
+
+# RUN VIA SSE: This spawns the app as an HTTP listener so other computers can reach it
+ENTRYPOINT ["node", "/app/dist/index.js", "--transport", "sse"]
