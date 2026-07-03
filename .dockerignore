@@ -1,0 +1,37 @@
+# Version control and editor metadata
+.git
+.github
+.vscode
+.idea
+
+# Dependency and build outputs
+node_modules
+npm-debug.log*
+coverage
+out
+dist
+*.tsbuildinfo
+
+# Tests and local development artifacts
+test
+*.swp
+*.swo
+
+# Local configuration and secrets
+.env
+.env.*
+*.local
+mcpServers.json
+mcp.json
+server.json
+*.pem
+*.key
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+
+# macOS and Windows system files
+.DS_Store
+Thumbs.db
